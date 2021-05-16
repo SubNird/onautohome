@@ -1,0 +1,31 @@
+diff --git a/wiringPi/wiringPi.c b/wiringPi/wiringPi.c
+index d45f83f..6f3543d 100644
+--- a/wiringPi/wiringPi.c
++++ b/wiringPi/wiringPi.c
+@@ -750,6 +750,8 @@ int piGpioLayout (void)
+   char line [120] ;
+   char *c ;
+   static int  gpioLayout = -1 ;
++
++  return 2;
+
+   if (gpioLayout != -1)	// No point checking twice
+     return gpioLayout ;
+@@ -964,6 +966,9 @@ void piBoardId (int *model, int *rev, int *mem, int *maker, int *warranty)
+ //	Will deal with the properly later on - for now, lets just get it going...
+ //  unsigned int modelNum ;
+
++  *model = PI_MODEL_4B ; *rev = PI_VERSION_1_2 ; *mem = 2 ; *maker = PI_MAKER_EGOMAN;
++  return
++
+   (void)piGpioLayout () ;	// Call this first to make sure all's OK. Don't care about the result.
+
+   if ((cpuFd = fopen ("/proc/cpuinfo", "r")) == NULL)
+@@ -2335,7 +2340,6 @@ int wiringPiSetup (void)
+   {
+     if ((fd = open ("/dev/gpiomem", O_RDWR | O_SYNC | O_CLOEXEC) ) >= 0)	// We're using gpiomem
+     {
+-      piGpioBase   = 0 ;
+       usingGpioMem = TRUE ;
+     }
+     else
