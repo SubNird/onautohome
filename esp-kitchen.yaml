@@ -1,0 +1,161 @@
+binary_sensor:
+- platform: gpio
+  pin: D0
+  name: "motion_kitchen"
+  device_class: motion
+  id: motion_kitchen
+  on_state:
+    then:
+      - if:
+          condition:
+            and:
+              - binary_sensor.is_on: "motion_kitchen"
+              - binary_sensor.is_off: "led_strip_off_allways"
+          then:
+            switch.turn_on: light_white_on
+      - if:
+          condition:
+            and:
+              - binary_sensor.is_off: "motion_kitchen"
+              - binary_sensor.is_off: bin_light_on
+              - binary_sensor.is_off: "led_strip_off_allways"
+          then:
+            - switch.turn_off: light_white_on
+            - switch.turn_off: super_light
+            - delay: 5 min
+            - if:
+                condition:
+                  binary_sensor.is_off: "motion_kitchen"
+                then:
+                  light.turn_off: kitchen_led_line
+
+
+- platform: template
+  name: "Подсветка включена постоянно"
+  id: bin_light_on
+  
+- platform: template
+  name: "led_strip_off_allways"
+  id: led_strip_off_allways
+            
+#Виртуальный выключатель, заставляет свет все время гореть.
+switch:
+  - platform: template
+    name: "Заблокировать подсветку"
+    id: light_on
+    optimistic: yes
+    turn_on_action:
+      - binary_sensor.template.publish:
+          id: bin_light_on
+          state: ON
+      - switch.turn_on: light_white_on
+    turn_off_action:
+      - binary_sensor.template.publish:
+          id: bin_light_on
+          state: OFF
+          
+#Виртуальный выключатель, блокирует включение подсветки.
+  - platform: template
+    name: "Не включать подсветку"
+    id: led_strip_off
+    optimistic: yes
+    turn_on_action:
+      - binary_sensor.template.publish:
+          id: led_strip_off_allways
+          state: ON
+      - light.turn_off: kitchen_led_line
+    turn_off_action:
+      - binary_sensor.template.publish:
+          id: led_strip_off_allways
+          state: OFF
+
+#Виртуальный выключатель, включает только белый свет.
+  - platform: template
+    name: "light white on"
+    id: light_white_on
+    optimistic: yes
+    turn_on_action:
+      - light.turn_on: 
+          id: kitchen_led_line
+#          color_mode: RGB_white
+          brightness: 100%
+          color_brightness: 0%
+          effect: none
+          white: 100%
+          red: 0%
+          blue: 0%
+          green: 0%
+    turn_off_action:
+      - light.turn_on: 
+          id: kitchen_led_line
+#          color_mode: RGB
+          brightness: 80%
+          effect: Fade
+          white: 0%
+
+#Виртуальный выключатель, включает белый свет вместе с цветными диодами.
+  - platform: template
+    name: "super light"
+    id: super_light
+    optimistic: yes
+    turn_on_action:
+      - light.turn_on:
+          id: kitchen_led_line
+          color_mode: RGB_white
+          brightness: 100%
+          white: 100%
+          red: 100%
+          green: 75%
+          blue: 50%
+    turn_off_action:
+      - if:
+          condition:
+            binary_sensor.is_on: "motion_kitchen"
+          then:
+            - light.turn_on:
+                id: kitchen_led_line
+                brightness: 100%
+                color_brightness: 0%
+                effect: none
+                white: 100%
+                red: 0%
+                blue: 0%
+                green: 0%
+
+
+light:
+- platform: rgbw
+  id: kitchen_led_line
+  name: "kitchen_led_line"
+  red: red_led
+  green: green_led
+  blue: blue_led
+  white: white_led
+  effects:
+  - random:
+      name: Fade
+      transition_length: 10s
+      update_interval: 10s
+      
+
+output:
+- id: white_led
+  platform: esp8266_pwm
+  pin: D1
+  inverted: true
+  max_power: 1
+  
+- id: blue_led
+  platform: esp8266_pwm
+  pin: D2
+  inverted: true
+  
+- id: red_led
+  platform: esp8266_pwm
+  pin: D4
+  inverted: true
+  
+- id: green_led
+  platform: esp8266_pwm
+  pin: D3
+  inverted: true
